@@ -11,18 +11,25 @@ export async function GET(req: Request) {
     );
   }
 
+  const apiKey = process.env.KAKAO_REST_API_KEY;
+
+  if (!apiKey) {
+    return Response.json(
+      { error: "KAKAO_REST_API_KEY 환경변수가 없어요." },
+      { status: 500 }
+    );
+  }
+
   const res = await fetch(
-    `https://dapi.kakao.com/v2/local/search/category.json?category_group_code=FD6&y=${lat}&x=${lng}&radius=500`,
+    `https://dapi.kakao.com/v2/local/search/category.json?category_group_code=FD6&y=${lat}&x=${lng}&radius=1000`,
     {
       headers: {
-        Authorization: "KakaoAK d7984cb73547b4ce84b91bbda15def5c",
+        Authorization: `KakaoAK ${apiKey}`,
       },
     }
   );
 
   const data = await res.json();
-
-  console.log("카카오 원본 응답 전체:", JSON.stringify(data, null, 2));
 
   if (!res.ok) {
     return Response.json(

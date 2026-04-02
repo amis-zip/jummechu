@@ -68,9 +68,9 @@ export default function RecommendPage() {
     setPicked(shuffled);
 
     if (shuffled.length === 0) {
-      setMessage("조건에 맞는 식당을 찾지 못했어요.");
+      setMessage("조건에 맞는 점심 후보를 찾지 못했어요.");
     } else {
-      setMessage("현재 위치를 성공적으로 불러왔어요.");
+      setMessage("조건에 맞는 점심 후보를 준비했어요.");
     }
   };
 
@@ -120,18 +120,18 @@ export default function RecommendPage() {
             점메추
           </p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
-            내 위치 기반 점심 추천
+            팀 점심 후보 추천
           </h1>
           <p className="mt-1 text-xs font-medium uppercase tracking-wide text-slate-400">
-            Lunch recommendation for your location
+            Lunch candidates for your team
           </p>
           <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-500 md:text-base">
-            지금 위치를 기준으로, 조건에 맞는 점심 후보를 빠르게 골라드려요.
+            현재 위치와 조건을 바탕으로, 팀에서 함께 고를 점심 후보를 추천해드려요.
           </p>
         </div>
 
         <div className="rounded-2xl bg-blue-50 px-4 py-3 text-sm text-slate-600 ring-1 ring-blue-100">
-          <p className="font-medium text-slate-800">상태</p>
+          <p className="font-medium text-slate-800">추천 상태</p>
           <p className="mt-1">{message}</p>
         </div>
       </div>
@@ -193,7 +193,7 @@ export default function RecommendPage() {
           onClick={() => pickRandomRestaurants(restaurants, category, maxDistance)}
           variant="primary"
         >
-          다시 추천
+          후보 다시 뽑기
         </ActionButton>
 
         <ActionButton
@@ -204,7 +204,7 @@ export default function RecommendPage() {
           }}
           variant="secondary"
         >
-          결과 페이지 보기
+          후보 결과 보기
         </ActionButton>
 
         <ActionButton
@@ -226,7 +226,7 @@ export default function RecommendPage() {
       {picked.length === 0 && (
         <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4">
           <p className="font-semibold text-amber-900">
-            조건에 맞는 식당이 없어요.
+            조건에 맞는 점심 후보를 찾지 못했어요.
           </p>
           <p className="mt-1 text-sm text-amber-700">
             음식 종류나 최대 거리를 바꾸거나, 추천 기록을 초기화해보세요.

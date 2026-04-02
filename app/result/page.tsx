@@ -20,11 +20,21 @@ export default function ResultPage() {
 
   useEffect(() => {
     const saved = localStorage.getItem("jummechu-picked");
-
     if (saved) {
       setPicked(JSON.parse(saved));
     }
   }, []);
+
+  useEffect(() => {
+    const savedVotes = localStorage.getItem("jummechu-votes");
+    if (savedVotes) {
+      setVotes(JSON.parse(savedVotes));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("jummechu-votes", JSON.stringify(votes));
+  }, [votes]);
 
   const handleVote = (id: string) => {
     setVotes((prev) => ({
@@ -90,6 +100,16 @@ export default function ResultPage() {
       <div className="mt-8 flex flex-wrap gap-3">
         <ActionButton href="/recommend" variant="primary">
           후보 다시 뽑으러 가기
+        </ActionButton>
+
+        <ActionButton
+          onClick={() => {
+            localStorage.removeItem("jummechu-votes");
+            setVotes({});
+          }}
+          variant="outline"
+        >
+          투표 초기화
         </ActionButton>
 
         <ActionButton href="/" variant="outline">
