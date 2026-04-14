@@ -15,15 +15,15 @@ export default function ActionButton({
   variant = "primary",
 }: ActionButtonProps) {
   const baseClass =
-    "rounded-2xl px-5 py-3 text-sm font-semibold transition duration-200 active:scale-[0.98]";
+    "inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold transition-all duration-200 active:scale-[0.98]";
 
   const variantClass = {
     primary:
-      "bg-blue-600 text-white shadow-lg shadow-blue-200 hover:bg-blue-700",
+      "bg-rose-500 text-white shadow-lg shadow-rose-200 hover:-translate-y-0.5 hover:bg-rose-600 hover:shadow-rose-300",
     secondary:
-      "bg-indigo-600 text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700",
+      "bg-pink-500 text-white shadow-lg shadow-pink-200 hover:-translate-y-0.5 hover:bg-pink-600 hover:shadow-pink-300",
     outline:
-      "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+      "border border-slate-200 bg-white text-slate-700 shadow-sm hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-md",
   };
 
   const className = `${baseClass} ${variantClass[variant]}`;

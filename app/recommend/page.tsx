@@ -25,6 +25,7 @@ export default function RecommendPage() {
   const [message, setMessage] = useState("위치 정보를 불러오는 중이에요...");
   const [category, setCategory] = useState("전체");
   const [maxDistance, setMaxDistance] = useState(500);
+  const [roomName, setRoomName] = useState("");
 
   const saveVisited = (list: KakaoPlace[]) => {
     const prev = JSON.parse(
@@ -116,7 +117,7 @@ export default function RecommendPage() {
     <PageShell>
       <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
         <div>
-          <p className="text-sm font-semibold tracking-wide text-blue-500">
+          <p className="text-sm font-semibold tracking-wide text-rose-500">
             점메추
           </p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
@@ -130,14 +131,14 @@ export default function RecommendPage() {
           </p>
         </div>
 
-        <div className="rounded-2xl bg-blue-50 px-4 py-3 text-sm text-slate-600 ring-1 ring-blue-100">
+        <div className="rounded-2xl bg-pink-50 px-4 py-3 text-sm text-slate-600 ring-1 ring-pink-100">
           <p className="font-medium text-slate-800">추천 상태</p>
           <p className="mt-1">{message}</p>
         </div>
       </div>
 
       <div className="mt-8 grid gap-5 md:grid-cols-2">
-        <div className="rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-100">
+        <div className="rounded-2xl bg-slate-50 p-5 ring-1 ring-rose-100">
           <p className="text-sm font-medium text-slate-500">현재 위치 정보</p>
           <div className="mt-3 space-y-2 text-slate-800">
             <p>
@@ -151,7 +152,7 @@ export default function RecommendPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-100">
+        <div className="rounded-2xl bg-slate-50 p-5 ring-1 ring-rose-100">
           <p className="text-sm font-medium text-slate-500">추천 조건</p>
 
           <div className="mt-4">
@@ -161,7 +162,7 @@ export default function RecommendPage() {
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-slate-800 shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-200"
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-slate-800 shadow-sm outline-none transition focus:border-rose-400 focus:ring-2 focus:ring-rose-200"
             >
               <option value="전체">전체</option>
               <option value="한식">한식</option>
@@ -178,7 +179,7 @@ export default function RecommendPage() {
             <select
               value={maxDistance}
               onChange={(e) => setMaxDistance(Number(e.target.value))}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-slate-800 shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-200"
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-slate-800 shadow-sm outline-none transition focus:border-rose-400 focus:ring-2 focus:ring-rose-200"
             >
               <option value={300}>300m 이하</option>
               <option value={500}>500m 이하</option>
@@ -186,6 +187,19 @@ export default function RecommendPage() {
             </select>
           </div>
         </div>
+      </div>
+
+      <div className="mt-6">
+        <label className="mb-2 block text-sm font-medium text-slate-700">
+          팀 이름 / 방 이름
+        </label>
+        <input
+          type="text"
+          value={roomName}
+          onChange={(e) => setRoomName(e.target.value)}
+          placeholder="예: 마케팅팀 점심"
+          className="w-full rounded-xl border border-slate-200 px-3 py-3 text-sm outline-none focus:ring-2 focus:ring-rose-200"
+        />
       </div>
 
       <div className="mt-6 flex flex-wrap gap-3">
@@ -198,9 +212,11 @@ export default function RecommendPage() {
 
         <ActionButton
           onClick={() => {
+            const roomId = crypto.randomUUID();
             localStorage.setItem("jummechu-picked", JSON.stringify(picked));
+            localStorage.setItem("jummechu-room-name", roomName);
             saveVisited(picked);
-            router.push("/result");
+            router.push(`/result?room=${roomId}`);
           }}
           variant="secondary"
         >
@@ -223,7 +239,7 @@ export default function RecommendPage() {
         </ActionButton>
       </div>
 
-      {picked.length === 0 && (
+      {picked.length === 0 ? (
         <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4">
           <p className="font-semibold text-amber-900">
             조건에 맞는 점심 후보를 찾지 못했어요.
@@ -232,13 +248,22 @@ export default function RecommendPage() {
             음식 종류나 최대 거리를 바꾸거나, 추천 기록을 초기화해보세요.
           </p>
         </div>
+      ) : (
+        <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {picked.map((place, index) => (
+            <div
+              key={place.id}
+              className="animate-[fadeUp_.5s_ease-out] opacity-0"
+              style={{
+                animationDelay: `${index * 120}ms`,
+                animationFillMode: "forwards",
+              }}
+            >
+              <RestaurantCard place={place} />
+            </div>
+          ))}
+        </div>
       )}
-
-      <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {picked.map((place) => (
-          <RestaurantCard key={place.id} place={place} />
-        ))}
-      </div>
     </PageShell>
   );
 }

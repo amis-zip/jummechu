@@ -6,7 +6,7 @@ export default function HomePage() {
     <PageShell>
       <div className="grid gap-8 md:grid-cols-2 md:items-center">
         <div>
-          <p className="text-sm font-semibold tracking-wide text-blue-500">
+          <p className="text-sm font-semibold tracking-wide text-rose-500">
             점메추
           </p>
 
@@ -33,14 +33,14 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="rounded-3xl bg-slate-50 p-5 ring-1 ring-slate-100">
-          <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+        <div className="rounded-3xl bg-slate-50 p-5 ring-1 ring-rose-100">
+          <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-rose-100">
             <p className="text-sm font-medium text-slate-500">
               오늘 이런 걸 할 수 있어요
             </p>
 
             <div className="mt-4 space-y-3">
-              <div className="rounded-2xl bg-blue-50 px-4 py-3">
+              <div className="rounded-2xl bg-rose-50 px-4 py-3">
                 <p className="font-semibold text-slate-800">
                   📍 내 위치 기반 추천
                 </p>
@@ -49,7 +49,7 @@ export default function HomePage() {
                 </p>
               </div>
 
-              <div className="rounded-2xl bg-indigo-50 px-4 py-3">
+              <div className="rounded-2xl bg-pink-50 px-4 py-3">
                 <p className="font-semibold text-slate-800">
                   🍱 음식 종류 필터
                 </p>
@@ -58,7 +58,7 @@ export default function HomePage() {
                 </p>
               </div>
 
-              <div className="rounded-2xl bg-sky-50 px-4 py-3">
+              <div className="rounded-2xl bg-rose-50 px-4 py-3">
                 <p className="font-semibold text-slate-800">
                   🚶 거리 조건 설정
                 </p>
@@ -81,7 +81,7 @@ export default function HomePage() {
       </div>
 
       <div className="mt-8 grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-rose-100">
           <p className="text-sm font-medium text-slate-500">STEP 1</p>
           <h2 className="mt-2 text-lg font-bold text-slate-900">
             추천 조건 고르기
@@ -91,7 +91,7 @@ export default function HomePage() {
           </p>
         </div>
 
-        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-rose-100">
           <p className="text-sm font-medium text-slate-500">STEP 2</p>
           <h2 className="mt-2 text-lg font-bold text-slate-900">
             점심 후보 받기
@@ -101,7 +101,7 @@ export default function HomePage() {
           </p>
         </div>
 
-        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-rose-100">
           <p className="text-sm font-medium text-slate-500">STEP 3</p>
           <h2 className="mt-2 text-lg font-bold text-slate-900">
             팀에서 메뉴 정하기
