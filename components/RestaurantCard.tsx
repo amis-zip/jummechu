@@ -10,7 +10,7 @@ type KakaoPlace = {
 type RestaurantCardProps = {
   place: KakaoPlace;
   votes?: number;
-  onVote?: (id: string) => void;
+  onVote?: (place: KakaoPlace) => void;
   showVoteButton?: boolean;
   isLeader?: boolean;
 };
@@ -76,7 +76,7 @@ export default function RestaurantCard({
 
           <button
             type="button"
-            onClick={() => onVote?.(place.id)}
+            onClick={() => onVote?.(place)}
             className="mt-3 w-full rounded-xl bg-rose-500 px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-rose-600 active:scale-[0.98]"
           >
             이 메뉴로 투표하기

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import PageShell from "@/components/PageShell";
 import ActionButton from "@/components/ActionButton";
@@ -20,11 +20,12 @@ type VoteRow = {
   id: number;
   room_id: string;
   place_id: string;
+  place_name: string;
   count: number;
   created_at: string;
 };
 
-export default function ResultPage() {
+function ResultPageContent() {
   const searchParams = useSearchParams();
   const roomId = searchParams.get("room");
 
@@ -37,17 +38,23 @@ export default function ResultPage() {
   );
   const [shareUrl, setShareUrl] = useState("");
   const [copyMessage, setCopyMessage] = useState("");
+  const [companyName, setCompanyName] = useState("");
   const [roomName, setRoomName] = useState("");
 
   useEffect(() => {
-    const saved = localStorage.getItem("jummechu-picked");
-    if (saved) {
-      setPicked(JSON.parse(saved));
+    const savedPicked = localStorage.getItem("jummechu-picked");
+    if (savedPicked) {
+      setPicked(JSON.parse(savedPicked));
     }
 
-    const savedName = localStorage.getItem("jummechu-room-name");
-    if (savedName) {
-      setRoomName(savedName);
+    const savedCompany = localStorage.getItem("jummechu-company-name");
+    if (savedCompany) {
+      setCompanyName(savedCompany);
+    }
+
+    const savedRoom = localStorage.getItem("jummechu-room-name");
+    if (savedRoom) {
+      setRoomName(savedRoom);
     }
   }, []);
 
@@ -127,14 +134,14 @@ export default function ResultPage() {
     localStorage.setItem(getVoteStorageKey(currentRoomId, placeId), "true");
   };
 
-  const handleVote = async (placeId: string) => {
+  const handleVote = async (place: KakaoPlace) => {
     if (!roomId) {
       setMessageType("error");
       setVoteMessage("공유된 투표방 정보가 없어요. 후보를 다시 만들어 주세요.");
       return;
     }
 
-    if (hasAlreadyVoted(roomId, placeId)) {
+    if (hasAlreadyVoted(roomId, place.id)) {
       setMessageType("info");
       setVoteMessage("이 후보에는 이미 투표했어요.");
       return;
@@ -146,7 +153,7 @@ export default function ResultPage() {
       .from("votes")
       .select("*")
       .eq("room_id", roomId)
-      .eq("place_id", placeId)
+      .eq("place_id", place.id)
       .maybeSingle();
 
     if (error) {
@@ -173,7 +180,8 @@ export default function ResultPage() {
     } else {
       const { error: insertError } = await supabase.from("votes").insert({
         room_id: roomId,
-        place_id: placeId,
+        place_id: place.id,
+        place_name: place.place_name,
         count: 1,
       });
 
@@ -185,7 +193,7 @@ export default function ResultPage() {
       }
     }
 
-    markAsVoted(roomId, placeId);
+    markAsVoted(roomId, place.id);
     setMessageType("success");
     setVoteMessage("투표가 반영됐어요.");
     fetchVotes();
@@ -219,7 +227,11 @@ export default function ResultPage() {
             점메추
           </p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
-            {roomName ? `${roomName} 점심 후보` : "오늘의 점심 후보"}
+            {companyName && roomName
+              ? `${companyName} · ${roomName}`
+              : roomName
+              ? `${roomName} 점심 후보`
+              : "오늘의 점심 후보"}
           </h1>
           <p className="mt-1 text-xs font-medium uppercase tracking-wide text-slate-400">
             Final lunch candidates for your team
@@ -388,5 +400,21 @@ export default function ResultPage() {
         </ActionButton>
       </div>
     </PageShell>
+  );
+}
+
+export default function ResultPage() {
+  return (
+    <Suspense
+      fallback={
+        <PageShell>
+          <div className="py-16 text-center text-slate-500">
+            결과 화면을 불러오는 중...
+          </div>
+        </PageShell>
+      }
+    >
+      <ResultPageContent />
+    </Suspense>
   );
 }
