@@ -40,6 +40,7 @@ function ResultPageContent() {
   const [copyMessage, setCopyMessage] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [roomName, setRoomName] = useState("");
+  const [ranking, setRanking] = useState<{ name: string; count: number }[]>([]);
 
   useEffect(() => {
     const savedPicked = localStorage.getItem("jummechu-picked");
@@ -92,10 +93,38 @@ function ResultPageContent() {
     setLoadingVotes(false);
   };
 
+  const fetchRanking = async () => {
+    const { data, error } = await supabase
+      .from("votes")
+      .select("place_name, count");
+
+    if (error) {
+      console.error("랭킹 조회 실패:", error);
+      return;
+    }
+
+    const grouped = (data ?? []).reduce((acc, cur) => {
+      const name = cur.place_name;
+      const count = cur.count ?? 0;
+
+      if (!acc[name]) {
+        acc[name] = { name, count: 0 };
+      }
+
+      acc[name].count += count;
+      return acc;
+    }, {} as Record<string, { name: string; count: number }>);
+
+    const result = Object.values(grouped).sort((a, b) => b.count - a.count);
+
+    setRanking(result);
+  };
+
   useEffect(() => {
     if (!roomId) return;
 
     fetchVotes();
+    fetchRanking();
 
     const channel = supabase
       .channel(`votes-realtime-${roomId}`)
@@ -109,6 +138,7 @@ function ResultPageContent() {
         },
         () => {
           fetchVotes();
+          fetchRanking();
         }
       )
       .subscribe();
@@ -197,6 +227,7 @@ function ResultPageContent() {
     setMessageType("success");
     setVoteMessage("투표가 반영됐어요.");
     fetchVotes();
+    fetchRanking();
   };
 
   const handleCopyLink = async () => {
@@ -389,6 +420,7 @@ function ResultPageContent() {
 
             setMessageType("success");
             setVoteMessage("투표를 초기화했어요.");
+            fetchRanking();
           }}
           variant="outline"
         >
@@ -398,6 +430,37 @@ function ResultPageContent() {
         <ActionButton href="/" variant="outline">
           처음으로
         </ActionButton>
+      </div>
+
+      <div className="mt-10">
+        <h2 className="text-xl font-bold text-slate-900">🔥 인기 메뉴 랭킹</h2>
+        <p className="mt-2 text-sm text-slate-500">
+          지금까지 가장 많은 표를 받은 메뉴예요.
+        </p>
+
+        <div className="mt-4 space-y-2">
+          {ranking.length === 0 ? (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+              <p className="text-sm font-medium text-amber-900">
+                아직 집계된 랭킹이 없어요.
+              </p>
+            </div>
+          ) : (
+            ranking.slice(0, 5).map((item, idx) => (
+              <div
+                key={item.name}
+                className="flex items-center justify-between rounded-2xl bg-rose-50 px-4 py-3 ring-1 ring-rose-100"
+              >
+                <span className="font-medium text-slate-800">
+                  {idx + 1}위 · {item.name}
+                </span>
+                <span className="font-semibold text-rose-500">
+                  {item.count}표
+                </span>
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </PageShell>
   );
