@@ -25,9 +25,22 @@ type VoteRow = {
   created_at: string;
 };
 
+type RankingItem = {
+  name: string;
+  count: number;
+};
+
+type KakaoSdk = {
+  isInitialized: () => boolean;
+  init: (key: string) => void;
+  Share: {
+    sendDefault: (options: Record<string, unknown>) => void;
+  };
+};
+
 function ResultPageContent() {
   const searchParams = useSearchParams();
-  const roomId = searchParams.get("room");
+  const roomId = searchParams.get("room") ?? "";
 
   const [picked, setPicked] = useState<KakaoPlace[]>([]);
   const [votes, setVotes] = useState<Record<string, number>>({});
@@ -40,7 +53,7 @@ function ResultPageContent() {
   const [copyMessage, setCopyMessage] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [roomName, setRoomName] = useState("");
-  const [ranking, setRanking] = useState<{ name: string; count: number }[]>([]);
+  const [ranking, setRanking] = useState<RankingItem[]>([]);
 
   useEffect(() => {
     const savedPicked = localStorage.getItem("jummechu-picked");
@@ -94,9 +107,12 @@ function ResultPageContent() {
   };
 
   const fetchRanking = async () => {
+    if (!roomId) return;
+
     const { data, error } = await supabase
       .from("votes")
-      .select("place_name, count");
+      .select("place_name, count")
+      .eq("room_id", roomId);
 
     if (error) {
       console.error("랭킹 조회 실패:", error);
@@ -113,10 +129,9 @@ function ResultPageContent() {
 
       acc[name].count += count;
       return acc;
-    }, {} as Record<string, { name: string; count: number }>);
+    }, {} as Record<string, RankingItem>);
 
     const result = Object.values(grouped).sort((a, b) => b.count - a.count);
-
     setRanking(result);
   };
 
@@ -244,6 +259,54 @@ function ResultPageContent() {
     }
   };
 
+  const handleKakaoShare = () => {
+    if (typeof window === "undefined") return;
+    if (!shareUrl) return;
+
+    const kakaoKey = process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY;
+
+    if (!kakaoKey) {
+      alert("카카오 JavaScript 키가 설정되지 않았어요.");
+      return;
+    }
+
+    const win = window as typeof window & { Kakao?: KakaoSdk };
+    const Kakao = win.Kakao;
+
+    if (!Kakao) {
+      alert("카카오 SDK를 불러오지 못했어요.");
+      return;
+    }
+
+    if (!Kakao.isInitialized()) {
+      Kakao.init(kakaoKey);
+    }
+
+    Kakao.Share.sendDefault({
+      objectType: "feed",
+      content: {
+        title: roomName ? `${roomName} 점심 후보` : "점메추 - 오늘의 점심 후보",
+        description: companyName
+          ? `${companyName} 팀 점심 후보에 투표해보세요.`
+          : "팀원들과 함께 점심 메뉴를 골라보세요.",
+        imageUrl: "https://jummechu-five.vercel.app/og-image.png",
+        link: {
+          mobileWebUrl: shareUrl,
+          webUrl: shareUrl,
+        },
+      },
+      buttons: [
+        {
+          title: "투표하러 가기",
+          link: {
+            mobileWebUrl: shareUrl,
+            webUrl: shareUrl,
+          },
+        },
+      ],
+    });
+  };
+
   const maxVote = useMemo(() => {
     const values = Object.values(votes);
     if (values.length === 0) return 0;
@@ -343,6 +406,14 @@ function ResultPageContent() {
               className="rounded-xl bg-rose-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-600 active:scale-[0.98]"
             >
               공유 링크 복사
+            </button>
+
+            <button
+              type="button"
+              onClick={handleKakaoShare}
+              className="rounded-xl bg-yellow-400 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-yellow-300 active:scale-[0.98]"
+            >
+              카카오톡 공유
             </button>
 
             {copyMessage && (
@@ -452,7 +523,14 @@ function ResultPageContent() {
                 className="flex items-center justify-between rounded-2xl bg-rose-50 px-4 py-3 ring-1 ring-rose-100"
               >
                 <span className="font-medium text-slate-800">
-                  {idx + 1}위 · {item.name}
+                  {idx === 0
+                    ? "🥇"
+                    : idx === 1
+                    ? "🥈"
+                    : idx === 2
+                    ? "🥉"
+                    : `${idx + 1}위`}{" "}
+                  {item.name}
                 </span>
                 <span className="font-semibold text-rose-500">
                   {item.count}표
