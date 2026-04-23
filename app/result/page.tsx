@@ -260,52 +260,58 @@ function ResultPageContent() {
   };
 
   const handleKakaoShare = () => {
-    if (typeof window === "undefined") return;
-    if (!shareUrl) return;
+  if (typeof window === "undefined") return;
 
-    const kakaoKey = process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY;
+  const kakaoKey = process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY;
 
-    if (!kakaoKey) {
-      alert("카카오 JavaScript 키가 설정되지 않았어요.");
-      return;
-    }
+  if (!kakaoKey) {
+    alert("카카오 JavaScript 키가 설정되지 않았어요.");
+    return;
+  }
 
-    const win = window as typeof window & { Kakao?: KakaoSdk };
-    const Kakao = win.Kakao;
+  const win = window as Window & {
+    Kakao?: {
+      isInitialized: () => boolean;
+      init: (key: string) => void;
+      Share: {
+        sendDefault: (options: Record<string, unknown>) => void;
+      };
+    };
+  };
 
-    if (!Kakao) {
-      alert("카카오 SDK를 불러오지 못했어요.");
-      return;
-    }
+  if (!win.Kakao) {
+    alert("카카오 SDK를 불러오지 못했어요.");
+    return;
+  }
 
-    if (!Kakao.isInitialized()) {
-      Kakao.init(kakaoKey);
-    }
+  if (!win.Kakao.isInitialized()) {
+    win.Kakao.init(kakaoKey);
+  }
 
-    Kakao.Share.sendDefault({
-      objectType: "feed",
-      content: {
-        title: roomName ? `${roomName} 점심 후보` : "점메추 - 오늘의 점심 후보",
-        description: companyName
-          ? `${companyName} 팀 점심 후보에 투표해보세요.`
-          : "팀원들과 함께 점심 메뉴를 골라보세요.",
-        imageUrl: "https://jummechu-five.vercel.app/og-image.png",
+  win.Kakao.Share.sendDefault({
+    objectType: "feed",
+    content: {
+      title: roomName ? `${roomName} 점심 후보` : "점메추 - 오늘의 점심 후보",
+      description: companyName
+        ? `${companyName} 팀 점심 후보에 투표해보세요.`
+        : "팀원들과 함께 점심 메뉴를 골라보세요.",
+      imageUrl: "https://jummechu-five.vercel.app/vercel.svg",
+      link: {
+        mobileWebUrl: shareUrl,
+        webUrl: shareUrl,
+      },
+    },
+    buttons: [
+      {
+        title: "투표하러 가기",
         link: {
           mobileWebUrl: shareUrl,
           webUrl: shareUrl,
         },
       },
-      buttons: [
-        {
-          title: "투표하러 가기",
-          link: {
-            mobileWebUrl: shareUrl,
-            webUrl: shareUrl,
-          },
-        },
-      ],
-    });
-  };
+    ],
+  });
+};
 
   const maxVote = useMemo(() => {
     const values = Object.values(votes);
@@ -409,12 +415,12 @@ function ResultPageContent() {
             </button>
 
             <button
-              type="button"
-              onClick={handleKakaoShare}
-              className="rounded-xl bg-yellow-400 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-yellow-300 active:scale-[0.98]"
-            >
-              카카오톡 공유
-            </button>
+  type="button"
+  onClick={handleKakaoShare}
+  className="rounded-xl bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-500"
+>
+  카카오톡 공유
+</button>
 
             {copyMessage && (
               <p className="text-sm font-medium text-slate-600">
