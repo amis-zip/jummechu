@@ -33,47 +33,57 @@ export default function RecommendPage() {
     ) as string[];
 
     const ids = list.map((place) => place.id);
-    const updated = [...new Set([...prev, ...ids])];
+    const updated = [...new Set([...prev, ...ids])].slice(-5);
 
     localStorage.setItem("jummechu-visited", JSON.stringify(updated));
   };
 
   const pickRandomRestaurants = (
-    list: KakaoPlace[],
-    selectedCategory: string,
-    selectedDistance: number
-  ) => {
-    const visited = JSON.parse(
-      localStorage.getItem("jummechu-visited") || "[]"
-    ) as string[];
+  list: KakaoPlace[],
+  selectedCategory: string,
+  selectedDistance: number
+) => {
+  const visited = JSON.parse(
+    localStorage.getItem("jummechu-visited") || "[]"
+  ) as string[];
 
-    let filtered = list
-      .filter((place) => {
-        const distance = Number(place.distance);
-        return Number.isFinite(distance) && distance <= selectedDistance;
-      })
-      .filter((place) => !visited.includes(place.id));
+  let filtered = list.filter((place) => {
+    const distance = Number(place.distance);
+    return Number.isFinite(distance) && distance <= selectedDistance;
+  });
 
-    if (selectedCategory !== "전체") {
-      filtered = filtered.filter((place) =>
-        place.category_name?.includes(selectedCategory)
-      );
-    }
+  if (selectedCategory !== "전체") {
+    filtered = filtered.filter((place) =>
+      place.category_name?.includes(selectedCategory)
+    );
+  }
 
-    const shuffled = [...filtered]
-      .map((value) => ({ value, sort: Math.random() }))
-      .sort((a, b) => a.sort - b.sort)
-      .map(({ value }) => value)
-      .slice(0, 3);
+  // 1차: 최근 추천된 가게 제외
+  let freshCandidates = filtered.filter((place) => !visited.includes(place.id));
 
-    setPicked(shuffled);
+  // 후보가 너무 적으면 전체 후보 사용
+  if (freshCandidates.length < 3) {
+    freshCandidates = filtered;
+  }
 
-    if (shuffled.length === 0) {
-      setMessage("조건에 맞는 점심 후보를 찾지 못했어요.");
-    } else {
-      setMessage("조건에 맞는 점심 후보를 준비했어요.");
-    }
-  };
+  // 완전 랜덤 셔플
+  const shuffled = [...freshCandidates]
+    .map((value) => ({ value, sort: Math.random() }))
+    .sort((a, b) => a.sort - b.sort)
+    .map(({ value }) => value);
+
+  const selected = shuffled.slice(0, 3);
+
+  setPicked(selected);
+
+  if (selected.length === 0) {
+    setMessage("조건에 맞는 점심 후보를 찾지 못했어요.");
+  } else {
+    setMessage(
+      `${freshCandidates.length}개의 후보 중에서 점심 후보를 골랐어요.`
+    );
+  }
+};
 
   useEffect(() => {
     if (!navigator.geolocation) {
