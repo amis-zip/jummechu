@@ -14,6 +14,45 @@ type KakaoPlace = {
   address_name: string;
   distance: string;
   category_name?: string;
+  priceRange?: string;
+};
+
+const excludeKeywords = [
+  "주점",
+  "술집",
+  "포차",
+  "호프",
+  "바",
+  "이자카야",
+  "횟집",
+  "해산물",
+  "조개",
+  "생선",
+  "오마카세",
+];
+
+const getPriceRange = (place: KakaoPlace) => {
+  const text = `${place.place_name} ${place.category_name ?? ""}`;
+
+  if (text.includes("분식") || text.includes("김밥") || text.includes("우동"))
+    return "💰 7천~1만원 예상";
+
+  if (text.includes("국밥") || text.includes("한식") || text.includes("백반"))
+    return "💰 9천~1.3만원 예상";
+
+  if (text.includes("중식") || text.includes("짜장") || text.includes("짬뽕"))
+    return "💰 8천~1.3만원 예상";
+
+  if (text.includes("일식") || text.includes("초밥") || text.includes("돈카츠"))
+    return "💰 1.1~1.8만원 예상";
+
+  if (text.includes("양식") || text.includes("파스타") || text.includes("피자"))
+    return "💰 1.3~2만원 예상";
+
+  if (text.includes("고기") || text.includes("삼겹살") || text.includes("갈비"))
+    return "💰 1.5만원 이상 예상";
+
+  return "💰 1만~1.5만원 예상";
 };
 
 export default function RecommendPage() {
@@ -40,51 +79,54 @@ export default function RecommendPage() {
   };
 
   const pickRandomRestaurants = (
-  list: KakaoPlace[],
-  selectedCategory: string,
-  selectedDistance: number
-) => {
-  const visited = JSON.parse(
-    localStorage.getItem("jummechu-visited") || "[]"
-  ) as string[];
+    list: KakaoPlace[],
+    selectedCategory: string,
+    selectedDistance: number
+  ) => {
+    const visited = JSON.parse(
+      localStorage.getItem("jummechu-visited") || "[]"
+    ) as string[];
 
-  let filtered = list.filter((place) => {
-    const distance = Number(place.distance);
-    return Number.isFinite(distance) && distance <= selectedDistance;
-  });
+    let filtered = list.filter((place) => {
+      const distance = Number(place.distance);
+      return Number.isFinite(distance) && distance <= selectedDistance;
+    });
 
-  if (selectedCategory !== "전체") {
-    filtered = filtered.filter((place) =>
-      place.category_name?.includes(selectedCategory)
-    );
-  }
+    filtered = filtered.filter((place) => {
+      const text = `${place.place_name} ${place.category_name ?? ""}`;
+      return !excludeKeywords.some((keyword) => text.includes(keyword));
+    });
 
-  // 1차: 최근 추천된 가게 제외
-  let freshCandidates = filtered.filter((place) => !visited.includes(place.id));
+    if (selectedCategory !== "전체") {
+      filtered = filtered.filter((place) =>
+        place.category_name?.includes(selectedCategory)
+      );
+    }
 
-  // 후보가 너무 적으면 전체 후보 사용
-  if (freshCandidates.length < 3) {
-    freshCandidates = filtered;
-  }
+    let freshCandidates = filtered.filter((place) => !visited.includes(place.id));
 
-  // 완전 랜덤 셔플
-  const shuffled = [...freshCandidates]
-    .map((value) => ({ value, sort: Math.random() }))
-    .sort((a, b) => a.sort - b.sort)
-    .map(({ value }) => value);
+    if (freshCandidates.length < 3) {
+      freshCandidates = filtered;
+    }
 
-  const selected = shuffled.slice(0, 3);
+    const shuffled = [...freshCandidates]
+      .map((value) => ({ value, sort: Math.random() }))
+      .sort((a, b) => a.sort - b.sort)
+      .map(({ value }) => value);
 
-  setPicked(selected);
+    const selected = shuffled.slice(0, 3).map((place) => ({
+      ...place,
+      priceRange: getPriceRange(place),
+    }));
 
-  if (selected.length === 0) {
-    setMessage("조건에 맞는 점심 후보를 찾지 못했어요.");
-  } else {
-    setMessage(
-      `${freshCandidates.length}개의 후보 중에서 점심 후보를 골랐어요.`
-    );
-  }
-};
+    setPicked(selected);
+
+    if (selected.length === 0) {
+      setMessage("조건에 맞는 점심 후보를 찾지 못했어요.");
+    } else {
+      setMessage(`${freshCandidates.length}개의 후보 중에서 골랐어요.`);
+    }
+  };
 
   useEffect(() => {
     if (!navigator.geolocation) {
@@ -134,11 +176,9 @@ export default function RecommendPage() {
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
             팀 점심 후보 추천
           </h1>
-          <p className="mt-1 text-xs font-medium uppercase tracking-wide text-slate-400">
-            Lunch candidates for your team
-          </p>
           <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-500 md:text-base">
-            현재 위치와 조건을 바탕으로, 팀에서 함께 고를 점심 후보를 추천해드려요.
+            주점, 해산물 등 점심 후보로 부적합한 메뉴는 자동으로 제외하고
+            예상 가격대도 함께 보여드려요.
           </p>
         </div>
 
@@ -222,37 +262,37 @@ export default function RecommendPage() {
         </ActionButton>
 
         <ActionButton
-  onClick={async () => {
-    if (picked.length === 0) {
-      alert("먼저 후보를 뽑아주세요.");
-      return;
-    }
+          onClick={async () => {
+            if (picked.length === 0) {
+              alert("먼저 후보를 뽑아주세요.");
+              return;
+            }
 
-    const roomId = crypto.randomUUID();
+            const roomId = crypto.randomUUID();
 
-    const { error } = await supabase.from("rooms").insert({
-      id: roomId,
-      room_name: roomName || "점심 후보",
-      candidates: picked,
-    });
+            const { error } = await supabase.from("rooms").insert({
+              id: roomId,
+              room_name: roomName || "점심 후보",
+              candidates: picked,
+            });
 
-    if (error) {
-      console.error("방 저장 실패:", error);
-      alert("방을 저장하지 못했어요.");
-      return;
-    }
+            if (error) {
+              console.error("방 저장 실패:", error);
+              alert("방을 저장하지 못했어요.");
+              return;
+            }
 
-    localStorage.setItem("jummechu-picked", JSON.stringify(picked));
-    localStorage.setItem("jummechu-room-name", roomName || "점심 후보");
+            localStorage.setItem("jummechu-picked", JSON.stringify(picked));
+            localStorage.setItem("jummechu-room-name", roomName || "점심 후보");
 
-    saveVisited(picked);
+            saveVisited(picked);
 
-    router.push(`/result?room=${roomId}`);
-  }}
-  variant="secondary"
->
-  후보 결과 보기
-</ActionButton>
+            router.push(`/result?room=${roomId}`);
+          }}
+          variant="secondary"
+        >
+          후보 결과 보기
+        </ActionButton>
 
         <ActionButton
           onClick={() => {

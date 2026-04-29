@@ -5,6 +5,7 @@ type KakaoPlace = {
   address_name: string;
   distance: string;
   category_name?: string;
+  priceRange?: string;
 };
 
 type RestaurantCardProps = {
@@ -49,6 +50,12 @@ export default function RestaurantCard({
       <p className="mt-3 text-sm font-medium text-rose-500">
         📍 {place.distance}m
       </p>
+
+      {place.priceRange && (
+        <p className="mt-2 text-sm font-medium text-slate-700">
+          {place.priceRange}
+        </p>
+      )}
 
       <p className="mt-2 text-sm leading-6 text-slate-500">
         🏠 {place.road_address_name || place.address_name}
