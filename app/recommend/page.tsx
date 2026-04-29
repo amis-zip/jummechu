@@ -14,45 +14,73 @@ type KakaoPlace = {
   address_name: string;
   distance: string;
   category_name?: string;
-  priceRange?: string;
+  priceLevel?: string;
 };
 
-const excludeKeywords = [
-  "주점",
-  "술집",
-  "포차",
-  "호프",
-  "바",
-  "이자카야",
-  "횟집",
-  "해산물",
-  "조개",
-  "생선",
-  "오마카세",
+type ExcludeOption = {
+  id: string;
+  label: string;
+  keywords: string[];
+};
+
+const excludeOptions: ExcludeOption[] = [
+  {
+    id: "alcohol",
+    label: "주점/술집 제외",
+    keywords: ["주점", "술집", "포차", "호프", "바", "이자카야"],
+  },
+  {
+    id: "seafood",
+    label: "해산물/횟집 제외",
+    keywords: ["횟집", "해산물", "조개", "생선", "오마카세"],
+  },
+  {
+    id: "meat",
+    label: "고기류 제외",
+    keywords: ["고기", "삼겹살", "갈비", "구이", "정육"],
+  },
+  {
+    id: "spicy",
+    label: "매운 음식 제외",
+    keywords: ["마라", "불닭", "매운", "쭈꾸미", "닭발"],
+  },
+  {
+    id: "cafe",
+    label: "카페/디저트 제외",
+    keywords: ["카페", "디저트", "베이커리", "커피", "케이크"],
+  },
 ];
 
-const getPriceRange = (place: KakaoPlace) => {
+const getPriceLevel = (place: KakaoPlace) => {
   const text = `${place.place_name} ${place.category_name ?? ""}`;
 
-  if (text.includes("분식") || text.includes("김밥") || text.includes("우동"))
-    return "💰 7천~1만원 예상";
+  if (
+    text.includes("분식") ||
+    text.includes("김밥") ||
+    text.includes("우동") ||
+    text.includes("패스트푸드")
+  ) {
+    return "💰";
+  }
 
-  if (text.includes("국밥") || text.includes("한식") || text.includes("백반"))
-    return "💰 9천~1.3만원 예상";
+  if (
+    text.includes("한식") ||
+    text.includes("국밥") ||
+    text.includes("중식")
+  ) {
+    return "💰💰";
+  }
 
-  if (text.includes("중식") || text.includes("짜장") || text.includes("짬뽕"))
-    return "💰 8천~1.3만원 예상";
+  if (
+    text.includes("양식") ||
+    text.includes("파스타") ||
+    text.includes("고기") ||
+    text.includes("초밥")
+  ) {
+    return "💰💰💰";
+  }
 
-  if (text.includes("일식") || text.includes("초밥") || text.includes("돈카츠"))
-    return "💰 1.1~1.8만원 예상";
-
-  if (text.includes("양식") || text.includes("파스타") || text.includes("피자"))
-    return "💰 1.3~2만원 예상";
-
-  if (text.includes("고기") || text.includes("삼겹살") || text.includes("갈비"))
-    return "💰 1.5만원 이상 예상";
-
-  return "💰 1만~1.5만원 예상";
+  return "💰💰";
 };
 
 export default function RecommendPage() {
@@ -66,6 +94,10 @@ export default function RecommendPage() {
   const [category, setCategory] = useState("전체");
   const [maxDistance, setMaxDistance] = useState(500);
   const [roomName, setRoomName] = useState("");
+  const [selectedExcludeIds, setSelectedExcludeIds] = useState<string[]>([
+    "alcohol",
+    "seafood",
+  ]);
 
   const saveVisited = (list: KakaoPlace[]) => {
     const prev = JSON.parse(
@@ -76,6 +108,14 @@ export default function RecommendPage() {
     const updated = [...new Set([...prev, ...ids])].slice(-5);
 
     localStorage.setItem("jummechu-visited", JSON.stringify(updated));
+  };
+
+  const toggleExcludeOption = (id: string) => {
+    setSelectedExcludeIds((prev) =>
+      prev.includes(id)
+        ? prev.filter((optionId) => optionId !== id)
+        : [...prev, id]
+    );
   };
 
   const pickRandomRestaurants = (
@@ -92,6 +132,12 @@ export default function RecommendPage() {
       return Number.isFinite(distance) && distance <= selectedDistance;
     });
 
+    const selectedOptions = excludeOptions.filter((option) =>
+      selectedExcludeIds.includes(option.id)
+    );
+
+    const excludeKeywords = selectedOptions.flatMap((option) => option.keywords);
+
     filtered = filtered.filter((place) => {
       const text = `${place.place_name} ${place.category_name ?? ""}`;
       return !excludeKeywords.some((keyword) => text.includes(keyword));
@@ -103,7 +149,9 @@ export default function RecommendPage() {
       );
     }
 
-    let freshCandidates = filtered.filter((place) => !visited.includes(place.id));
+    let freshCandidates = filtered.filter(
+      (place) => !visited.includes(place.id)
+    );
 
     if (freshCandidates.length < 3) {
       freshCandidates = filtered;
@@ -116,7 +164,7 @@ export default function RecommendPage() {
 
     const selected = shuffled.slice(0, 3).map((place) => ({
       ...place,
-      priceRange: getPriceRange(place),
+      priceLevel: getPriceLevel(place),
     }));
 
     setPicked(selected);
@@ -164,7 +212,7 @@ export default function RecommendPage() {
     if (restaurants.length > 0) {
       pickRandomRestaurants(restaurants, category, maxDistance);
     }
-  }, [restaurants, category, maxDistance]);
+  }, [restaurants, category, maxDistance, selectedExcludeIds]);
 
   return (
     <PageShell>
@@ -176,9 +224,11 @@ export default function RecommendPage() {
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
             팀 점심 후보 추천
           </h1>
+          <p className="mt-1 text-xs font-medium uppercase tracking-wide text-slate-400">
+            Lunch candidates for your team
+          </p>
           <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-500 md:text-base">
-            주점, 해산물 등 점심 후보로 부적합한 메뉴는 자동으로 제외하고
-            예상 가격대도 함께 보여드려요.
+            현재 위치와 조건을 바탕으로, 팀에서 함께 고를 점심 후보를 추천해드려요.
           </p>
         </div>
 
@@ -240,6 +290,35 @@ export default function RecommendPage() {
         </div>
       </div>
 
+      <div className="mt-6 rounded-2xl bg-slate-50 p-5 ring-1 ring-rose-100">
+        <p className="text-sm font-medium text-slate-500">제외할 메뉴</p>
+        <p className="mt-1 text-sm text-slate-500">
+          팀원들이 못 먹거나 피하고 싶은 메뉴를 제외할 수 있어요.
+        </p>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          {excludeOptions.map((option) => {
+            const checked = selectedExcludeIds.includes(option.id);
+
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => toggleExcludeOption(option.id)}
+                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                  checked
+                    ? "bg-rose-500 text-white shadow-sm"
+                    : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50"
+                }`}
+              >
+                {checked ? "✓ " : ""}
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="mt-6">
         <label className="mb-2 block text-sm font-medium text-slate-700">
           팀 이름 / 방 이름
@@ -255,7 +334,9 @@ export default function RecommendPage() {
 
       <div className="mt-6 flex flex-wrap gap-3">
         <ActionButton
-          onClick={() => pickRandomRestaurants(restaurants, category, maxDistance)}
+          onClick={() =>
+            pickRandomRestaurants(restaurants, category, maxDistance)
+          }
           variant="primary"
         >
           후보 다시 뽑기

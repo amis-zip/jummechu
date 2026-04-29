@@ -5,7 +5,7 @@ type KakaoPlace = {
   address_name: string;
   distance: string;
   category_name?: string;
-  priceRange?: string;
+  priceLevel?: string;
 };
 
 type RestaurantCardProps = {
@@ -51,10 +51,15 @@ export default function RestaurantCard({
         📍 {place.distance}m
       </p>
 
-      {place.priceRange && (
-        <p className="mt-2 text-sm font-medium text-slate-700">
-          {place.priceRange}
-        </p>
+      {place.priceLevel && (
+        <div className="mt-2">
+          <p className="text-sm font-medium text-slate-700">
+            가격대 힌트: {place.priceLevel}
+          </p>
+          <p className="mt-1 text-xs text-slate-400">
+            카테고리 기반 참고 정보
+          </p>
+        </div>
       )}
 
       <p className="mt-2 text-sm leading-6 text-slate-500">
