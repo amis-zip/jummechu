@@ -51,32 +51,46 @@ function ResultPageContent() {
   );
   const [shareUrl, setShareUrl] = useState("");
   const [copyMessage, setCopyMessage] = useState("");
-  const [companyName, setCompanyName] = useState("");
   const [roomName, setRoomName] = useState("");
   const [ranking, setRanking] = useState<RankingItem[]>([]);
-
-  useEffect(() => {
-    const savedPicked = localStorage.getItem("jummechu-picked");
-    if (savedPicked) {
-      setPicked(JSON.parse(savedPicked));
-    }
-
-    const savedCompany = localStorage.getItem("jummechu-company-name");
-    if (savedCompany) {
-      setCompanyName(savedCompany);
-    }
-
-    const savedRoom = localStorage.getItem("jummechu-room-name");
-    if (savedRoom) {
-      setRoomName(savedRoom);
-    }
-  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       setShareUrl(window.location.href);
     }
   }, []);
+
+  const fetchRoom = async () => {
+    if (!roomId) return;
+
+    const { data, error } = await supabase
+      .from("rooms")
+      .select("room_name, candidates")
+      .eq("id", roomId)
+      .single();
+
+    if (error) {
+      console.error("방 정보 조회 실패:", error);
+
+      const savedPicked = localStorage.getItem("jummechu-picked");
+      const savedRoom = localStorage.getItem("jummechu-room-name");
+
+      if (savedPicked) setPicked(JSON.parse(savedPicked));
+      if (savedRoom) setRoomName(savedRoom);
+
+      return;
+    }
+
+    if (data?.room_name) {
+      setRoomName(data.room_name);
+      localStorage.setItem("jummechu-room-name", data.room_name);
+    }
+
+    if (Array.isArray(data?.candidates)) {
+      setPicked(data.candidates);
+      localStorage.setItem("jummechu-picked", JSON.stringify(data.candidates));
+    }
+  };
 
   const fetchVotes = async () => {
     if (!roomId) return;
@@ -138,6 +152,7 @@ function ResultPageContent() {
   useEffect(() => {
     if (!roomId) return;
 
+    fetchRoom();
     fetchVotes();
     fetchRanking();
 
@@ -260,58 +275,49 @@ function ResultPageContent() {
   };
 
   const handleKakaoShare = () => {
-  if (typeof window === "undefined") return;
+    if (typeof window === "undefined") return;
+    if (!shareUrl) return;
 
-  const kakaoKey = process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY;
+    const kakaoKey = process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY;
 
-  if (!kakaoKey) {
-    alert("카카오 JavaScript 키가 설정되지 않았어요.");
-    return;
-  }
+    if (!kakaoKey) {
+      alert("카카오 JavaScript 키가 설정되지 않았어요.");
+      return;
+    }
 
-  const win = window as Window & {
-    Kakao?: {
-      isInitialized: () => boolean;
-      init: (key: string) => void;
-      Share: {
-        sendDefault: (options: Record<string, unknown>) => void;
-      };
-    };
-  };
+    const win = window as Window & { Kakao?: KakaoSdk };
 
-  if (!win.Kakao) {
-    alert("카카오 SDK를 불러오지 못했어요.");
-    return;
-  }
+    if (!win.Kakao) {
+      alert("카카오 SDK를 불러오지 못했어요.");
+      return;
+    }
 
-  if (!win.Kakao.isInitialized()) {
-    win.Kakao.init(kakaoKey);
-  }
+    if (!win.Kakao.isInitialized()) {
+      win.Kakao.init(kakaoKey);
+    }
 
-  win.Kakao.Share.sendDefault({
-    objectType: "feed",
-    content: {
-      title: roomName ? `${roomName} 점심 후보` : "점메추 - 오늘의 점심 후보",
-      description: companyName
-        ? `${companyName} 팀 점심 후보에 투표해보세요.`
-        : "팀원들과 함께 점심 메뉴를 골라보세요.",
-      imageUrl: "https://jummechu-five.vercel.app/vercel.svg",
-      link: {
-        mobileWebUrl: shareUrl,
-        webUrl: shareUrl,
-      },
-    },
-    buttons: [
-      {
-        title: "투표하러 가기",
+    win.Kakao.Share.sendDefault({
+      objectType: "feed",
+      content: {
+        title: roomName ? `${roomName} 점심 후보` : "점메추 - 오늘의 점심 후보",
+        description: "팀원들과 함께 점심 메뉴를 골라보세요.",
+        imageUrl: "https://jummechu-five.vercel.app/vercel.svg",
         link: {
           mobileWebUrl: shareUrl,
           webUrl: shareUrl,
         },
       },
-    ],
-  });
-};
+      buttons: [
+        {
+          title: "투표하러 가기",
+          link: {
+            mobileWebUrl: shareUrl,
+            webUrl: shareUrl,
+          },
+        },
+      ],
+    });
+  };
 
   const maxVote = useMemo(() => {
     const values = Object.values(votes);
@@ -327,11 +333,7 @@ function ResultPageContent() {
             점메추
           </p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
-            {companyName && roomName
-              ? `${companyName} · ${roomName}`
-              : roomName
-              ? `${roomName} 점심 후보`
-              : "오늘의 점심 후보"}
+            {roomName ? `${roomName} 점심 후보` : "오늘의 점심 후보"}
           </h1>
           <p className="mt-1 text-xs font-medium uppercase tracking-wide text-slate-400">
             Final lunch candidates for your team
@@ -415,12 +417,12 @@ function ResultPageContent() {
             </button>
 
             <button
-  type="button"
-  onClick={handleKakaoShare}
-  className="rounded-xl bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-500"
->
-  카카오톡 공유
-</button>
+              type="button"
+              onClick={handleKakaoShare}
+              className="rounded-xl bg-yellow-400 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-yellow-300 active:scale-[0.98]"
+            >
+              카카오톡 공유
+            </button>
 
             {copyMessage && (
               <p className="text-sm font-medium text-slate-600">

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import PageShell from "@/components/PageShell";
 import ActionButton from "@/components/ActionButton";
 import RestaurantCard from "@/components/RestaurantCard";
+import { supabase } from "@/lib/supabase";
 
 type KakaoPlace = {
   id: string;
@@ -221,17 +222,37 @@ export default function RecommendPage() {
         </ActionButton>
 
         <ActionButton
-          onClick={() => {
-            const roomId = crypto.randomUUID();
-            localStorage.setItem("jummechu-picked", JSON.stringify(picked));
-            localStorage.setItem("jummechu-room-name", roomName);
-            saveVisited(picked);
-            router.push(`/result?room=${roomId}`);
-          }}
-          variant="secondary"
-        >
-          후보 결과 보기
-        </ActionButton>
+  onClick={async () => {
+    if (picked.length === 0) {
+      alert("먼저 후보를 뽑아주세요.");
+      return;
+    }
+
+    const roomId = crypto.randomUUID();
+
+    const { error } = await supabase.from("rooms").insert({
+      id: roomId,
+      room_name: roomName || "점심 후보",
+      candidates: picked,
+    });
+
+    if (error) {
+      console.error("방 저장 실패:", error);
+      alert("방을 저장하지 못했어요.");
+      return;
+    }
+
+    localStorage.setItem("jummechu-picked", JSON.stringify(picked));
+    localStorage.setItem("jummechu-room-name", roomName || "점심 후보");
+
+    saveVisited(picked);
+
+    router.push(`/result?room=${roomId}`);
+  }}
+  variant="secondary"
+>
+  후보 결과 보기
+</ActionButton>
 
         <ActionButton
           onClick={() => {
